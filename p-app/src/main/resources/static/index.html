@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 宠物寄养管家台 · Pet Boarding</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"PingFang SC","Microsoft YaHei",sans-serif; background:#f0f8f1; color:#14232b; }
+  header { background:linear-gradient(135deg,#2e7d4f,#57b87a); color:#fff; padding:18px 28px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { font-size:20px; }
+  header .sub { font-size:12px; opacity:.85; margin-top:4px; }
+  header .badge { font-size:13px; background:rgba(255,255,255,.15); padding:6px 14px; border-radius:20px; }
+  main { display:grid; grid-template-columns:1fr 340px; gap:16px; padding:16px 20px; max-width:1240px; margin:0 auto; }
+  .col { display:flex; flex-direction:column; gap:16px; }
+  .card { background:#fff; border-radius:12px; padding:16px 18px; box-shadow:0 1px 4px rgba(46,125,79,.10); }
+  .card h2 { font-size:15px; margin-bottom:12px; color:#2e7d4f; }
+  .stat { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .stat div { background:#ddf0e2; border-radius:10px; padding:12px; }
+  .stat b { display:block; font-size:22px; color:#39945c; margin-top:4px; }
+  .stat span { font-size:12px; color:#7ba38b; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; }
+  .tag.g { background:#e3f4e9; color:#218a58; }
+  .tag.y { background:#fdf3e0; color:#c07f16; }
+  .tag.r { background:#fdeaea; color:#c74a44; }
+  .tag.b { background:#e7f0fb; color:#2e5fa3; }
+  .it { border:1px solid #c2e6cd; border-radius:10px; padding:10px 14px; margin-bottom:10px; }
+  .it .top { display:flex; justify-content:space-between; margin-bottom:4px; }
+  .it b { color:#2e7d4f; font-size:13.5px; }
+  .it .meta { font-size:12.5px; color:#4d6673; line-height:1.7; }
+  .ai-panel { position:sticky; top:16px; display:flex; flex-direction:column; height:calc(100vh - 32px); background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(46,125,79,.10); }
+  .ai-head { background:linear-gradient(135deg,#2e7d4f,#57b87a); color:#fff; padding:14px 16px; }
+  .ai-head b { font-size:15px; }
+  .ai-head .sub { font-size:11px; opacity:.85; margin-top:3px; }
+  .ai-body { flex:1; overflow-y:auto; padding:14px; font-size:13.5px; line-height:1.75; }
+  .ai-body .msg { margin-bottom:12px; white-space:pre-wrap; word-break:break-word; }
+  .ai-body .msg.user { background:#ddf0e2; border-radius:10px 10px 2px 10px; padding:8px 12px; margin-left:24px; color:#14232b; }
+  .chips { padding:8px 14px; display:flex; flex-wrap:wrap; gap:6px; border-top:1px solid #d2f0da; }
+  .chip { font-size:12px; background:#ddf0e2; color:#2e7d4f; border:none; border-radius:14px; padding:5px 10px; cursor:pointer; }
+  .chip:hover { background:#a8d4b8; }
+  .ai-input { display:flex; gap:8px; padding:10px 14px; border-top:1px solid #d2f0da; }
+  .ai-input input { flex:1; border:1px solid #b5d0dc; border-radius:8px; padding:9px 12px; font-size:13px; outline:none; }
+  .ai-input input:focus { border-color:#57b87a; }
+  .ai-input button { background:#57b87a; color:#fff; border:none; border-radius:8px; padding:0 18px; font-size:13px; cursor:pointer; }
+  .ai-input button:disabled { background:#8cc9a3; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🐾 AI 宠物寄养管家台</h1>
+    <div class="sub">房型 · 寄养师 · 预订 · 统计 | 宠物寄养云平台</div>
+  </div>
+  <div class="badge" id="topBadge">加载中…</div>
+</header>
+<main>
+  <div class="col">
+    <div class="card">
+      <h2>运营看板</h2>
+      <div class="stat" id="stats"></div>
+    </div>
+    <div class="card">
+      <h2>寄养房型</h2>
+      <div id="services"></div>
+    </div>
+    <div class="card">
+      <h2>最新订单</h2>
+      <div id="recent"></div>
+    </div>
+  </div>
+  <div class="ai-panel">
+    <div class="ai-head">
+      <b>🐾 AI 宠物寄养管家</b>
+      <div class="sub">boarding-copilot · 房型 / 寄养师 / 预订 / 统计</div>
+    </div>
+    <div class="ai-body" id="aiBody"></div>
+    <div class="chips">
+      <button class="chip" onclick="ask('有哪些寄养房型和价格？')">房型价目</button>
+      <button class="chip" onclick="ask('有哪些寄养师？擅长什么？')">寄养师查询</button>
+      <button class="chip" onclick="ask('帮我预订金毛「旺财」住豪华大床房 5 天，周五 10:00 入住，乐先生 13800111111，确认无误直接办理')">预订寄养</button>
+      <button class="chip" onclick="ask('查一下订单 P4001 的状态')">订单查询</button>
+      <button class="chip" onclick="ask('今天运营情况怎么样？')">运营看板</button>
+    </div>
+    <div class="ai-input">
+      <input id="q" placeholder="例如：猫寄养一天多少钱？；帮我预订犬舍 5 天" onkeydown="if(event.key==='Enter')send()">
+      <button id="sendBtn" onclick="send()">发送</button>
+    </div>
+  </div>
+</main>
+<script>
+const j = r => Promise.resolve(r).then(resp => resp.json()).then(d => d.data ?? d);
+async function load() {
+  try {
+    const st = await j(fetch('/api/stats'));
+    document.getElementById('topBadge').textContent = `订单 ${st.totalOrders} · 营收 ¥${st.revenue}`;
+    document.getElementById('stats').innerHTML = `
+      <div><span>总单量</span><b>${st.totalOrders}</b></div>
+      <div><span>进行中</span><b>${st.ongoing}</b></div>
+      <div><span>已完成</span><b>${st.done}</b></div>
+      <div><span>营收</span><b>¥${st.revenue}</b></div>`;
+    const ps = await j(fetch('/api/services'));
+    document.getElementById('services').innerHTML = (ps.services || ps).map(p => `
+      <div class="it">
+        <div class="top"><b>${p.room}</b><span class="tag g">¥${p.price}</span></div>
+        <div class="meta">${p.type} · ${p.desc}</div>
+      </div>`).join('');
+    document.getElementById('recent').innerHTML = `
+      <div class="it">
+        <div class="top"><b>P4001 · 纪先生</b><span class="tag y">已预订</span></div>
+        <div class="meta">布偶猫「雪球」· 标准猫舍 · 小满 · 周四 10:00 · 5 天 · ¥340</div>
+      </div>
+      <div class="it">
+        <div class="top"><b>P4002 · 隋女士</b><span class="tag b">寄养中</span></div>
+        <div class="meta">金毛「大壮」· 豪华大床房 · 阿忠 · 周四 09:00 · 7 天 · ¥1106</div>
+      </div>
+      <div class="it">
+        <div class="top"><b>P4003 · 邵先生</b><span class="tag g">已完成</span></div>
+        <div class="meta">柯基「土豆」· 标准犬舍 · 朵朵 · 周三 08:00 · 3 天 · ¥264</div>
+      </div>`;
+  } catch(e) { console.error(e); }
+}
+function ask(t) { const q=document.getElementById('q'); q.value=t; send(); }
+async function send() {
+  const inp = document.getElementById('q'), btn = document.getElementById('sendBtn');
+  const text = inp.value.trim(); if (!text || btn.disabled) return;
+  inp.value = ''; btn.disabled = true;
+  const body = document.getElementById('aiBody');
+  const u = document.createElement('div'); u.className = 'msg user'; u.textContent = text; body.appendChild(u);
+  const a = document.createElement('div'); a.className = 'msg'; a.textContent = '…'; body.appendChild(a);
+  try {
+    const resp = await fetch('/api/assistant/stream', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message:text}) });
+    const reader = resp.body.getReader(), dec = new TextDecoder(); let buf = '', out = '';
+    for (;;) {
+      const {done, value} = await reader.read(); if (done) break;
+      buf += dec.decode(value, {stream:true});
+      const parts = buf.split('\n\n'); buf = parts.pop();
+      for (const p of parts) {
+        for (const line of p.split('\n')) {
+          if (!line.startsWith('data:')) continue;
+          const dstr = line.slice(5).trim(); if (!dstr || dstr === '[DONE]') continue;
+          try {
+            const d = JSON.parse(dstr);
+            const piece = d.content ?? d.delta ?? '';
+            if (typeof piece === 'string' && piece) { out += piece; a.textContent = out; body.scrollTop = body.scrollHeight; }
+          } catch(e) {}
+        }
+      }
+    }
+    if (!out) a.textContent = '（无返回内容）';
+  } catch(e) { a.textContent = 'AI 服务暂时不可用：' + e.message; }
+  btn.disabled = false; body.scrollTop = body.scrollHeight;
+}
+load();
+</script>
+</body>
+</html>

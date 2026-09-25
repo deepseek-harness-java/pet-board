@@ -1,0 +1,6 @@
+id: boarding-copilot
+name: AI 宠物寄养管家
+version: 1.0.0
+author: xfg-studio
+description: AI 宠物寄养管家，支持房型价目（猫舍/犬舍/豪华房/拼房/月住）、寄养师查询、预订寄养（要素确认）、订单查询与运营统计。
+entrypoint: cn.xiaofuge.o.plugin.BoardingPlugin
